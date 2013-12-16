@@ -19,8 +19,7 @@ def getFilmLocations():
   if centerLatLng is None:
     return ('Must provide valid map center location', 400)
 
-  locations = mongo.db.filmlocations.find({"lngLat": {"$near": {"$geometry": {"type": "Point", "coordinates": centerLatLng}}}},
-                                          {"release_year": 1, "title": 1, "lngLat": 1, "production_company": 1})
+  locations = mongo.db.filmlocations.find({"lngLat": {"$near": {"$geometry": {"type": "Point", "coordinates": centerLatLng}}}})
   return dumps({'results': locations})
 
 def getLatLng(coords):
