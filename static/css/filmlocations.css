@@ -1,0 +1,16 @@
+
+
+/** The following CSS is required: https://developers.google.com/maps/documentation/javascript/tutorial#HTML5 */
+html {
+  height: 100%;
+}
+
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0
+}
+
+#map-canvas {
+  height: 100%;
+}
