@@ -12,8 +12,7 @@ def crawl_and_geocode():
      3. Save in Mongo.
   """
   resp = requests.get(FILM_LOCATION_RESOURCE_URL,
-                      params = {"$select": "locations,title,fun_facts,release_year,production_company",
-                                "$where": "locations IS NOT NULL"})
+                      params = {"$where": "locations IS NOT NULL"})
   if resp.status_code != 200:
     raise BaseException("Movie data request failed: %d" % r.status_code)
   movieData = resp.json()
@@ -31,8 +30,8 @@ def crawl_and_geocode():
 
   dbclient = MongoClient()
   db = dbclient.filmlocations
-  for i in range(0,10):
-  # for i in range(0, len(movieData)):
+  # for i in range(0,100):
+  for i in range(0, len(movieData)):
     locAddress = movieData[i]['locations']
     addressData = getAddressData(locAddress, boundsParam)
     if not addressData:
