@@ -4,12 +4,14 @@ import time
 import pymongo
 from pymongo import MongoClient
 
+FILM_LOCATION_RESOURCE_URL = "http://data.sfgov.org/resource/yitu-d5am.json"
+
 def crawl_and_geocode():
   """1. Read the locations from the sfgov database.
      2. Geocode addresses into lat-lng pairs.
      3. Save in Mongo.
   """
-  resp = requests.get("http://data.sfgov.org/resource/yitu-d5am.json",
+  resp = requests.get(FILM_LOCATION_RESOURCE_URL,
                       params = {"$select": "locations,title,fun_facts,release_year,production_company",
                                 "$where": "locations IS NOT NULL"})
   if resp.status_code != 200:
@@ -29,22 +31,21 @@ def crawl_and_geocode():
 
   dbclient = MongoClient()
   db = dbclient.filmlocations
-  for i in range(0,100):
+  for i in range(0,10):
   # for i in range(0, len(movieData)):
     locAddress = movieData[i]['locations']
     addressData = getAddressData(locAddress, boundsParam)
-    if addressData == 'OVER_QUERY_LIMIT':
-      time.sleep(2)
-      addressData = getAddressData(locAddress, boundsParam)
+    if not addressData:
+      continue
     firstSfAddress = findFirstSfAddress(addressData, firstTwoBounds[0], firstTwoBounds[1])
-    # sometimes the address is formatted as such: "Coit Tower (123 Broadway St.)"
+    # sometimes the address is formatted as such: "Coit Tower (123 Broadway St.)", find subaddresses in parens
     if not firstSfAddress:
       subAddresses = re.findall('\((.*)\)', locAddress)
       for subAddr in subAddresses:
         addressData = getAddressData(subAddr, boundsParam)
-        if addressData == 'OVER_QUERY_LIMIT':
-          time.sleep(2)
-          addressData = getAddressData(subAddr, boundsParam)
+        if not addressData:
+          continue
+        # find addresses within SF region only
         firstSfAddress = findFirstSfAddress(addressData, firstTwoBounds[0], firstTwoBounds[1])
         if firstSfAddress:
           break
@@ -59,14 +60,19 @@ def crawl_and_geocode():
   db.filmlocations.create_index([('lngLat', pymongo.GEO2D), ('title', pymongo.ASCENDING)])
 
 def getAddressData(addr, boundsParam):
-  resp = requests.get("http://maps.googleapis.com/maps/api/geocode/json",
-                             params = {'address': addr + ", San Francisco", 'sensor': 'false', 'bounds': boundsParam})
+  url = "http://maps.googleapis.com/maps/api/geocode/json"
+  params = {'address': addr + ", San Francisco", 'sensor': 'false', 'bounds': boundsParam}
+  resp = requests.get(url, params=params)
   addressData = resp.json()
   if resp.status_code != 200 or addressData.get('status') != 'OK':
     # http://stackoverflow.com/questions/17843536/google-geocoding-api-error-over-query-limit
     if addressData.get('status') == 'OVER_QUERY_LIMIT':
-      return 'OVER_QUERY_LIMIT'
-    print "Address data request failed: %d %s" % (resp.status_code, (addressData.get('status') or 'None'))
+      time.sleep(2)
+      resp = requests.get(url, params=params)
+      addressData = resp.json()
+    if resp.status_code != 200 or addressData.get('status') != 'OK':
+      print "Address data request failed: %s %d %s" % (addr, resp.status_code, (addressData.get('status') or 'None'))
+      return None
   return addressData
 
 def findFirstSfAddress(geocodingResults, sfSouthwestBound, sfNorthEastBound):
