@@ -21,9 +21,10 @@ $(function(){
   var locations = new FilmLocations;
   var FilmLocationView = Backbone.View.extend({
     marker: null,
-    initialize: function() {
+    initialize: function(options) {
       this.listenTo(this.model, 'change', this.render);
-      this.listenTo(this.model, 'destroy', this.remove);
+      this.listenTo(this.model, 'remove', this.remove);
+      this.useDefaultMarker = options.useDefaultMarker || false;
     },
 
     // Re-render the titles of the todo item.
@@ -32,19 +33,27 @@ $(function(){
       lat = this.model.get('lngLat')[1]
       lng = this.model.get('lngLat')[0]
 
-      this.marker = new google.maps.Marker({
+      var markerOptions = {
         position: new google.maps.LatLng(lat, lng),
         title: this.model.get('title')
-      });
+      }
+      if (!this.useDefaultMarker) {
+        markerOptions['icon'] = {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 1.5,
+          fillColor: 'red',
+          strokeColor: 'red'
+        }
+      }
+      this.marker = new google.maps.Marker(markerOptions);
 
       var infowindow = new google.maps.InfoWindow({
         content: this.contentForInfoWindow()
       });
 
       google.maps.event.addListener(this.marker, 'click', function() {
-        if (openedInfoWindow) {
-          openedInfoWindow.close();
-        }
+        App.closeInfoWindow();
+
         infowindow.open(map, self.marker);
         openedInfoWindow = infowindow;
       });
@@ -79,7 +88,9 @@ $(function(){
       if (actorList.length > 0) {
         content += '<p><b>Starring:</b>' + actorList.join(',') + '</p>';
       }
-      content += '<p>' + self.model.get('fun_facts') + '</p>';
+      if (self.model.get('fun_facts')) {
+        content += '<p>' + self.model.get('fun_facts') + '</p>';
+      }
       return content;
     }
   });
@@ -102,7 +113,16 @@ $(function(){
       };
       map = new google.maps.Map($("#map-canvas").get(0),
                                 mapOptions);
-      if(navigator.geolocation) {
+      google.maps.event.addListener(map, 'center_changed', function() {
+        // if an info window is open, the user is not panning the map themselves, the window may autopan.
+        if (!openedInfoWindow) {
+          locations.fetch();
+        }
+      });
+      google.maps.event.addListener(map, 'click', this.closeInfoWindow);
+      google.maps.event.addListener(map, 'dragstart', this.closeInfoWindow);
+
+      if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(function(position) {
           initialLocation = new google.maps.LatLng(position.coords.latitude,position.coords.longitude);
           map.setCenter(initialLocation);
@@ -115,9 +135,16 @@ $(function(){
       }
     },
 
+    closeInfoWindow: function() {
+      if (openedInfoWindow) {
+        openedInfoWindow.close();
+        openedInfoWindow = null;
+      }
+    },
+
     drawMarkers: function() {
       locations.each(function(loc, index) {
-        var view = new FilmLocationView({model: loc});
+        var view = new FilmLocationView({model: loc, useDefaultMarker: (index < 10)});
         view.render();
       }, this);
     }
