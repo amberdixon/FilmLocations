@@ -1,12 +1,13 @@
 
 $(function(){
 
-  var map = null;
+  var gMap = null;
+  var gMapItemInfoWindow = null;
   var FilmLocation = Backbone.Model.extend({});
   var FilmLocations = Backbone.Collection.extend({
     model: FilmLocation,
     url: function() {
-      centerLatLng = map.getCenter();
+      centerLatLng = gMap.getCenter();
       if (centerLatLng) {
         return '/filmlocations?centerLatLng=' + centerLatLng.lat() + ',' + centerLatLng.lng();
       }
@@ -17,7 +18,6 @@ $(function(){
     }
   });
 
-  var openedInfoWindow = null;
   var locations = new FilmLocations;
   var FilmLocationView = Backbone.View.extend({
     marker: null,
@@ -40,7 +40,7 @@ $(function(){
       if (!this.useDefaultMarker) {
         markerOptions['icon'] = {
           path: google.maps.SymbolPath.CIRCLE,
-          scale: 1.5,
+          scale: 2,
           fillColor: 'red',
           strokeColor: 'red'
         }
@@ -53,13 +53,12 @@ $(function(){
 
       google.maps.event.addListener(this.marker, 'click', function() {
         App.closeInfoWindow();
-
-        infowindow.open(map, self.marker);
-        openedInfoWindow = infowindow;
+        infowindow.open(gMap, self.marker);
+        gMapItemInfoWindow = infowindow;
       });
 
       // To add the marker to the map, call setMap();
-      this.marker.setMap(map);
+      this.marker.setMap(gMap);
 
       return this;
     },
@@ -98,7 +97,6 @@ $(function(){
 
   var AppView = Backbone.View.extend({
 
-
     defaultZoomLevel: 13,
     // Google maps geocoding API indicates SF center is 37.7749295, -122.4194155
     defaultMapCenter: [37.7749295, -122.4194155],
@@ -111,21 +109,21 @@ $(function(){
         center: new google.maps.LatLng(this.defaultMapCenter[0], this.defaultMapCenter[1]),
         zoom: 13
       };
-      map = new google.maps.Map($("#map-canvas").get(0),
+      gMap = new google.maps.Map($("#map-canvas").get(0),
                                 mapOptions);
-      google.maps.event.addListener(map, 'center_changed', function() {
+      google.maps.event.addListener(gMap, 'center_changed', function() {
         // if an info window is open, the user is not panning the map themselves, the window may autopan.
-        if (!openedInfoWindow) {
+        if (!gMapItemInfoWindow) {
           locations.fetch();
         }
       });
-      google.maps.event.addListener(map, 'click', this.closeInfoWindow);
-      google.maps.event.addListener(map, 'dragstart', this.closeInfoWindow);
+      google.maps.event.addListener(gMap, 'click', this.closeInfoWindow);
+      google.maps.event.addListener(gMap, 'dragstart', this.closeInfoWindow);
 
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(function(position) {
           initialLocation = new google.maps.LatLng(position.coords.latitude,position.coords.longitude);
-          map.setCenter(initialLocation);
+          gMap.setCenter(initialLocation);
           locations.fetch();
         }, function() {
           locations.fetch();
@@ -136,9 +134,9 @@ $(function(){
     },
 
     closeInfoWindow: function() {
-      if (openedInfoWindow) {
-        openedInfoWindow.close();
-        openedInfoWindow = null;
+      if (gMapItemInfoWindow) {
+        gMapItemInfoWindow.close();
+        gMapItemInfoWindow = null;
       }
     },
 
@@ -151,7 +149,6 @@ $(function(){
 
   });
 
-  // Finally, we kick things off by creating the **App**.
   var App = new AppView;
 
 });
