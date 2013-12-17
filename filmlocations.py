@@ -15,14 +15,16 @@ def showFilmLocations():
 
 @app.route("/filmlocations")
 def getFilmLocations():
-  centerLatLng = getLatLng(request.args.get('centerLatLng'))
-  if centerLatLng is None:
+  centerLngLat = getLngLat(request.args.get('centerLatLng'))
+  if centerLngLat is None:
     return ('Must provide valid map center location', 400)
 
-  locations = mongo.db.filmlocations.find({"lngLat": {"$near": {"$geometry": {"type": "Point", "coordinates": centerLatLng}}}})
+  lngLatCriteria = {"lngLat": {"$near": centerLngLat}}
+
+  locations = mongo.db.filmlocations.find(lngLatCriteria).limit(200)
   return dumps({'results': locations})
 
-def getLatLng(coords):
+def getLngLat(coords):
   if not coords:
     return None
   coordArr = coords.split(',')
@@ -33,7 +35,7 @@ def getLatLng(coords):
     if float(l) == 0.0:
       return None
 
-  return [float(c) for c in coordArr]
+  return [float(coordArr[1]), float(coordArr[0])]
 
 if __name__ == "__main__":
   app.run(debug = True)
