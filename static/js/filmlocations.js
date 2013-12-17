@@ -6,15 +6,24 @@ $(function(){
   var FilmLocation = Backbone.Model.extend({});
   var FilmLocations = Backbone.Collection.extend({
     model: FilmLocation,
+    titleToFilter: null,
     url: function() {
       centerLatLng = gMap.getCenter();
       if (centerLatLng) {
-        return '/filmlocations?centerLatLng=' + centerLatLng.lat() + ',' + centerLatLng.lng();
+        var url = '/filmlocations?centerLatLng=' + centerLatLng.lat() + ',' + centerLatLng.lng();
+        if (this.titleToFilter && this.titleToFilter.length > 0) {
+          url += '&title=' + this.titleToFilter;
+        }
+        return url;
       }
       return null;
     },
     parse: function(response) {
       return response.results;
+    },
+    updateFilter: function(titleToFilter) {
+      this.titleToFilter = titleToFilter;
+      this.fetch();
     }
   });
 
@@ -111,11 +120,8 @@ $(function(){
       };
       gMap = new google.maps.Map($("#map-canvas").get(0),
                                 mapOptions);
-      google.maps.event.addListener(gMap, 'center_changed', function() {
-        // if an info window is open, the user is not panning the map themselves, the window may autopan.
-        if (!gMapItemInfoWindow) {
-          locations.fetch();
-        }
+      google.maps.event.addListener(gMap, 'dragend', function() {
+        locations.fetch();
       });
       google.maps.event.addListener(gMap, 'click', this.closeInfoWindow);
       google.maps.event.addListener(gMap, 'dragstart', this.closeInfoWindow);
@@ -141,6 +147,13 @@ $(function(){
     },
 
     drawMarkers: function() {
+      if (locations.titleToFilter) {
+        // if we are filtering by title, then center the map on first search result
+        var first = locations.first();
+        lat = first.get('lngLat')[1]
+        lng = first.get('lngLat')[0]
+        gMap.setCenter(new google.maps.LatLng(lat, lng));
+      }
       locations.each(function(loc, index) {
         var view = new FilmLocationView({model: loc, useDefaultMarker: (index < 10)});
         view.render();
@@ -150,5 +163,40 @@ $(function(){
   });
 
   var App = new AppView;
+
+
+	$( "#autocomplete" ).on( "listviewbeforefilter", function ( e, data ) {
+		var $ul = $( this ),
+			$input = $(data.input),
+			value = $input.val(),
+			html = "";
+		$ul.html( "" );
+		if ( value && value.length > 2 ) {
+			$ul.html( "<li><div class='ui-loader'><span class='ui-icon ui-icon-loading'></span></div></li>" );
+			$ul.listview( "refresh" );
+			$.getJSON(
+        "/filmsearch",
+        {'query': $input.val()},
+        function ( response ) {
+  				_.each( response.results, function (elem) {
+  					html += "<li>" + elem + "</li>";
+  				});
+  				$ul.html( html );
+  				$ul.listview( "refresh" );
+  				$ul.trigger( "updatelayout");
+  			});
+		} else if (value.length == 0){
+      locations.updateFilter(null);
+		}
+	})
+	$( "#autocomplete" ).on( "click", function(e) {
+	  // check if type if LI
+    var title = $(e.target).text();
+		var $ul = $( this ),
+			$input = $('.ui-listview-filter input');
+    $ul.html("");
+    $input.val(title);
+    locations.updateFilter(title);
+	});
 
 });

@@ -56,7 +56,8 @@ def crawl_and_geocode():
     newobj = db.filmlocations.insert(movieData[i])
     if newobj is None:
       print "Warning: DB Insert of movieData %s failed" % movieData[i]['title']
-  db.filmlocations.create_index([('lngLat', pymongo.GEO2D), ('title', pymongo.ASCENDING)])
+  db.filmlocations.create_index([('lngLat', pymongo.GEO2D)])
+  db.filmlocations.create_index([('title', pymongo.ASCENDING)])
 
 def getAddressData(addr, boundsParam):
   url = "http://maps.googleapis.com/maps/api/geocode/json"

@@ -1,19 +1,33 @@
-<HTML>
-  <HEAD>
-    <TITLE>San Francisco Film Locations</TITLE>
-    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
-    <link rel="stylesheet" href="/static/css/filmlocations.css"/>
-    <script type="text/javascript" src="/static/js/lib/jquery.js"></script>
-    <script type="text/javascript" src="/static/js/lib/underscore.js"></script>
-    <script type="text/javascript" src="/static/js/lib/backbone.js"></script>
-    <script type="text/javascript"
-      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDyJXI3QPIfA3oFKWo0jIBSh1oSfwNAi0w&sensor=false">
-    </script>
-   <script type="text/javascript" src="/static/js/filmlocations.js"></script>
-  </HEAD>
-  <BODY>
-  <div id="maps-app">
-    <div id="map-canvas"></div>
-  </div>
-  </BODY>
-</HTML>
+<!doctype html>
+<html>
+<head>
+  <title>San Francisco Film Locations</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="http://code.jquery.com/mobile/1.3.2/jquery.mobile-1.3.2.min.css" />
+  <link rel="stylesheet" href="/static/css/filmlocations.css"/>
+  <script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+  <script src="http://code.jquery.com/mobile/1.3.2/jquery.mobile-1.3.2.min.js"></script>
+  <script type="text/javascript" src="/static/js/lib/underscore.js"></script>
+  <script type="text/javascript" src="/static/js/lib/backbone.js"></script>
+  <script type="text/javascript"
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDyJXI3QPIfA3oFKWo0jIBSh1oSfwNAi0w&sensor=false"></script>
+ <script type="text/javascript" src="/static/js/filmlocations.js"></script>
+</head>
+<body>
+<div data-role="page" id="maps-page">
+
+  <div data-role="header">
+      <h1>San Francisco Film Locations</h1>
+  </div><!-- /header -->
+
+  <div data-role="content">
+    <ul id="autocomplete" data-role="listview" data-inset="true" data-filter="true" data-filter-placeholder="Find a film..." data-filter-theme="d"></ul>
+    <div id="maps-app">
+      <div id="map-canvas"></div>
+    </div>
+  </div><!-- /content -->
+</div>
+
+
+</body>
+</html>
