@@ -7,7 +7,11 @@ It relies on data provided by the following API: https://data.sfgov.org/Arts-Cul
 
 I used Flask as the web server framework to serve up film location data. It returns data in JSON. The frontend is written in backbone.js and relies on JQuery Mobile for the search bar at the top of the page, which also provides autocompletion of film titles. When you search for a film and hit one of the autocompleted suggestions, the map markers reload to only the film locations for that film. I used the Google Maps JS API to layout film locations on the map.
 
+When the user lands on the site, we attempt to use geolocation to center the map. If the user does not permit location detection, then we center the map in Downtown SF.
+
 When the user moves the map and also when the map is first loaded, a request is made to the server to obtain the film locations that are nearest to the center point of the map. I created a mongodb index on the 2d latitude and longitude coordinates that are stored with each film location to allow for efficient querying and sorting of location data by distance. There are almost 900 locations in the database. The server returns the nearest 200 results. These results are contained in a backbone model class, each of which is stored in a collection. A Backbone view corresponds to each model; the view creates a Google Maps marker and places it on the map. The nearest 10 search results use a large marker icon and the subsequent results are represented as small red dots on the map. (I noticed that this is how maps.google.com represents markers when you search for something, so I emulated that experience.)
+
+Note that if there are multiple markers at the exact same lat-long coordinate, then only one marker will be displayed. There is a plugin available called "spiderfier" or something along those lines to distinguish markers, but I did not have time to implement it.
 
 Finally, I deployed these components to an EC2 server which runs Mongo. It also runs Flask in conjunction with Nginx and uWsgi. I provided uWsgi with a YAML config file (app.yaml).
 
